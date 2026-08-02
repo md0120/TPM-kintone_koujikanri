@@ -1,0 +1,80 @@
+<title>共通ナビゲーションバー プレビュー</title>
+<style>
+:root{
+  --bg:#f5f6f3; --panel:#ffffff; --border:#dce2db; --text:#2b332d; --sub:#6b766e;
+  --teal:#2f6f63; --teal-soft:#e3efea; --gold:#e2b13c;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#14181a; --panel:#1c2220; --border:#2c3531; --text:#e6ece8; --sub:#93a099; --teal-soft:#213a34; }
+}
+:root[data-theme="dark"]{ --bg:#14181a; --panel:#1c2220; --border:#2c3531; --text:#e6ece8; --sub:#93a099; --teal-soft:#213a34; }
+:root[data-theme="light"]{ --bg:#f5f6f3; --panel:#ffffff; --border:#dce2db; --text:#2b332d; --sub:#6b766e; --teal-soft:#e3efea; }
+
+*{box-sizing:border-box;}
+body{ font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Noto Sans JP",system-ui,sans-serif; color:var(--text); background:var(--bg); margin:0; padding:24px; }
+h1{ font-size:16px; margin:0 0 4px; }
+p.lede{ font-size:12.5px; color:var(--sub); margin:0 0 20px; }
+
+.kintone-frame{ border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--panel); margin-bottom:28px; }
+.kintone-topbar{ background:var(--gold); height:36px; display:flex; align-items:center; padding:0 14px; font-size:12px; color:#4a3c0e; font-weight:700; }
+.kintone-appbar{ background:#3a3f38; height:34px; display:flex; align-items:center; padding:0 14px; color:#fff; font-size:12.5px; }
+
+/* ナビゲーションバー本体 */
+.smc-nav{ display:flex; gap:6px; padding:8px 12px; background:#f7f8f5; border-bottom:1px solid var(--border); overflow-x:auto; }
+:root[data-theme="dark"] .smc-nav, :root:not([data-theme="light"]) .smc-nav { }
+.smc-nav a{ flex:none; display:inline-flex; align-items:center; text-decoration:none; font-size:12.5px; font-weight:700; color:var(--text); background:var(--panel); border:1px solid var(--border); border-radius:100px; padding:6px 14px; white-space:nowrap; }
+.smc-nav a:hover{ background:var(--teal-soft); border-color:var(--teal); }
+.smc-nav a.current{ background:var(--teal); color:#fff; border-color:var(--teal); cursor:default; }
+
+.kintone-body{ padding:24px; color:var(--sub); font-size:12.5px; }
+.kintone-body .fake-title{ font-size:14px; font-weight:700; color:var(--text); margin-bottom:10px; }
+.kintone-body .fake-row{ height:14px; background:var(--border); border-radius:4px; margin-bottom:8px; opacity:.5; width:90%; }
+.kintone-body .fake-row:nth-child(3){ width:70%; }
+.kintone-body .fake-row:nth-child(4){ width:80%; }
+
+.option-label{ font-size:11px; font-weight:700; letter-spacing:.04em; color:var(--sub); text-transform:uppercase; margin-bottom:8px; }
+</style>
+
+<h1>app共通ナビゲーションバー プレビュー</h1>
+<p class="lede">37・38・40・43・45・54・34の各appページ上部に、同じ構成のリンクバーを表示するイメージです。現在開いているappのボタンだけ塗りつぶし表示（クリック不可）になります。</p>
+
+<div class="option-label">例：app37「工事一覧」を開いている状態</div>
+<div class="kintone-frame">
+  <div class="kintone-topbar">kintone　325fggwl7tdq.cybozu.com</div>
+  <div class="kintone-appbar">【SMC】③工事一覧</div>
+  <nav class="smc-nav">
+    <a href="#" class="current">工事一覧</a>
+    <a href="#">TPM報告書</a>
+    <a href="#">他報告書</a>
+    <a href="#">工程表</a>
+    <a href="#">空調運転記録</a>
+    <a href="#">不在・タスク</a>
+    <a href="#">連絡先</a>
+  </nav>
+  <div class="kintone-body">
+    <div class="fake-title">工事一覧（65件中）</div>
+    <div class="fake-row"></div>
+    <div class="fake-row"></div>
+    <div class="fake-row"></div>
+  </div>
+</div>
+
+<div class="option-label">例：app54「不在・タスク」を開いている状態</div>
+<div class="kintone-frame">
+  <div class="kintone-topbar">kintone　325fggwl7tdq.cybozu.com</div>
+  <div class="kintone-appbar">【SMC】⑧チームタスク・予定管理</div>
+  <nav class="smc-nav">
+    <a href="#">工事一覧</a>
+    <a href="#">TPM報告書</a>
+    <a href="#">他報告書</a>
+    <a href="#">工程表</a>
+    <a href="#">空調運転記録</a>
+    <a href="#" class="current">不在・タスク</a>
+    <a href="#">連絡先</a>
+  </nav>
+  <div class="kintone-body">
+    <div class="fake-title">メンバー登録・不在日・タスク管理</div>
+    <div class="fake-row"></div>
+    <div class="fake-row"></div>
+  </div>
+</div>

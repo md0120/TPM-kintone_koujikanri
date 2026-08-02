@@ -1,0 +1,152 @@
+<title>app54 ヘッダー配色案</title>
+<style>
+:root{
+  --bg:#f5f6f3; --panel:#ffffff; --border:#dce2db; --text:#2b332d; --sub:#6b766e;
+  --teal:#2f6f63; --teal-soft:#e3efea;
+  --red-soft:#f6e2de; --red:#b23a2e;
+  --yellow-soft:#fdf1c0; --yellow:#9c7a0a;
+  --roster:#eef0ea;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#14181a; --panel:#1c2220; --border:#2c3531; --text:#e6ece8; --sub:#93a099; --teal-soft:#213a34; --roster:#222923; }
+}
+:root[data-theme="dark"]{ --bg:#14181a; --panel:#1c2220; --border:#2c3531; --text:#e6ece8; --sub:#93a099; --teal-soft:#213a34; --roster:#222923; }
+:root[data-theme="light"]{ --bg:#f5f6f3; --panel:#ffffff; --border:#dce2db; --text:#2b332d; --sub:#6b766e; --teal-soft:#e3efea; --roster:#eef0ea; }
+
+*{box-sizing:border-box;}
+body{ font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Noto Sans JP",system-ui,sans-serif; color:var(--text); background:var(--bg); margin:0; padding:24px; }
+h1{ font-size:16px; margin:0 0 4px; }
+p.lede{ font-size:12.5px; color:var(--sub); margin:0 0 24px; }
+.option{ margin-bottom:32px; }
+.option-label{ font-size:11px; font-weight:700; letter-spacing:.04em; color:var(--sub); text-transform:uppercase; margin-bottom:8px; }
+.section{ border:1px solid var(--border); border-radius:10px; background:var(--panel); overflow:hidden; margin-bottom:10px; }
+.head{ display:flex; align-items:center; justify-content:space-between; padding:9px 14px; font-size:12.5px; font-weight:700; }
+.body{ padding:10px 14px; font-size:12px; color:var(--sub); display:flex; gap:8px; flex-wrap:wrap; }
+.chip{ background:var(--roster); border-radius:100px; padding:4px 10px; font-size:11.5px; color:var(--text); font-weight:600; }
+.card{ border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:11.5px; min-width:110px; }
+.badge{ font-size:10px; font-weight:700; padding:2px 6px; border-radius:100px; margin-left:6px; }
+.badge.holiday{ background:var(--red-soft); color:var(--red); }
+.badge.outing{ background:var(--yellow-soft); color:var(--yellow); }
+.badge.training{ background:var(--teal-soft); color:var(--teal); }
+table{ border-collapse:collapse; width:100%; font-size:11.5px; }
+th,td{ padding:6px 8px; text-align:left; }
+tbody tr{ border-bottom:1px solid var(--border); }
+.pri{ font-size:10px; font-weight:700; padding:2px 6px; border-radius:5px; }
+.pri.high{ background:var(--red-soft); color:var(--red); }
+
+/* Option A: 統一（濃いグリーン単色） */
+.optA .head{ background:var(--teal); color:#fff; }
+
+/* Option B: セクション別に淡いトーンで塗り分け（見出しは通常テキスト色のまま） */
+.optB .roster .head{ background:var(--roster); color:var(--text); }
+.optB .leave .head{ background:var(--teal-soft); color:var(--text); }
+.optB .task .head{ background:var(--teal); color:#fff; }
+
+/* Option C: ヘッダーは白のまま、左端に色帯（アクセントバー）だけ */
+.optC .head{ background:var(--panel); border-left:4px solid var(--teal); padding-left:12px; }
+.optC .roster .head{ border-left-color:#8a9a8f; }
+.optC .leave .head{ border-left-color:var(--yellow); }
+.optC .task .head{ border-left-color:var(--teal); }
+
+/* Option C+: 案Cのアクセントバー＋薄い色付きヘッダー背景 */
+.optCplus .roster .head{ background:var(--roster); border-left:4px solid #8a9a8f; padding-left:12px; }
+.optCplus .leave .head{ background:var(--yellow-soft); border-left:4px solid var(--yellow); padding-left:12px; }
+.optCplus .task .head{ background:var(--teal-soft); border-left:4px solid var(--teal); padding-left:12px; }
+
+/* 休暇・研修・外出ヘッダー：青系サンプル3種 */
+.blue1 .leave .head{ background:#e2ecf7; border-left:4px solid #3a6ea5; padding-left:12px; }
+.blue2 .leave .head{ background:#dceaf6; border-left:4px solid #2f5f8f; padding-left:12px; }
+.blue3 .leave .head{ background:#e7f0fa; border-left:4px solid #5b8ab8; padding-left:12px; }
+.blue1 .roster .head, .blue2 .roster .head, .blue3 .roster .head{ background:var(--roster); border-left:4px solid #8a9a8f; padding-left:12px; }
+.blue1 .task .head, .blue2 .task .head, .blue3 .task .head{ background:var(--teal-soft); border-left:4px solid var(--teal); padding-left:12px; }
+</style>
+
+<h1>app54 セクション見出しの配色案</h1>
+<p class="lede">案Cをベースに、薄いヘッダー背景色を追加した「案C+」を最後に追加しました。</p>
+
+<div class="option optA">
+  <div class="option-label">案A — 全セクション統一（濃いグリーン単色）</div>
+  <div class="section roster"><div class="head">メンバー登録（7人）</div><div class="body"><span class="chip">倉本</span><span class="chip">土居</span><span class="chip">宮井</span></div></div>
+  <div class="section leave"><div class="head">休暇・研修・外出（本社・他現場・テレワークなど）</div><div class="body">
+    <div class="card">石井<span class="badge holiday">休暇</span></div>
+    <div class="card">宮井<span class="badge training">研修</span></div>
+    <div class="card">渡邉<span class="badge outing">外出</span></div>
+  </div></div>
+  <div class="section task"><div class="head">タスク管理</div><div class="body" style="display:block;padding:0;">
+    <table><tbody>
+      <tr><td><span class="pri high">高</span></td><td>テスト案件</td><td>サンプル詳細</td><td>2026-08-01</td><td>未着手</td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<div class="option optB">
+  <div class="option-label">案B — セクションごとに淡い色分け（メンバー＝淡緑グレー／予定＝淡ティール／タスク＝濃ティール）</div>
+  <div class="section roster"><div class="head">メンバー登録（7人）</div><div class="body"><span class="chip">倉本</span><span class="chip">土居</span><span class="chip">宮井</span></div></div>
+  <div class="section leave"><div class="head">休暇・研修・外出（本社・他現場・テレワークなど）</div><div class="body">
+    <div class="card">石井<span class="badge holiday">休暇</span></div>
+    <div class="card">宮井<span class="badge training">研修</span></div>
+    <div class="card">渡邉<span class="badge outing">外出</span></div>
+  </div></div>
+  <div class="section task"><div class="head" style="color:#fff;">タスク管理</div><div class="body" style="display:block;padding:0;">
+    <table><tbody>
+      <tr><td><span class="pri high">高</span></td><td>テスト案件</td><td>サンプル詳細</td><td>2026-08-01</td><td>未着手</td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<div class="option optC">
+  <div class="option-label">案C — アクセントバーのみ（控えめ）</div>
+  <div class="section roster"><div class="head">メンバー登録（7人）</div><div class="body"><span class="chip">倉本</span><span class="chip">土居</span><span class="chip">宮井</span></div></div>
+  <div class="section leave"><div class="head">休暇・研修・外出（本社・他現場・テレワークなど）</div><div class="body">
+    <div class="card">石井<span class="badge holiday">休暇</span></div>
+    <div class="card">宮井<span class="badge training">研修</span></div>
+    <div class="card">渡邉<span class="badge outing">外出</span></div>
+  </div></div>
+  <div class="section task"><div class="head">タスク管理</div><div class="body" style="display:block;padding:0;">
+    <table><tbody>
+      <tr><td><span class="pri high">高</span></td><td>テスト案件</td><td>サンプル詳細</td><td>2026-08-01</td><td>未着手</td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<div class="option optCplus">
+  <div class="option-label">案C+ — アクセントバー＋薄い色付き背景（今回の追加案）</div>
+  <div class="section roster"><div class="head">メンバー登録（7人）</div><div class="body"><span class="chip">倉本</span><span class="chip">土居</span><span class="chip">宮井</span></div></div>
+  <div class="section leave"><div class="head">休暇・研修・外出（本社・他現場・テレワークなど）</div><div class="body">
+    <div class="card">石井<span class="badge holiday">休暇</span></div>
+    <div class="card">宮井<span class="badge training">研修</span></div>
+    <div class="card">渡邉<span class="badge outing">外出</span></div>
+  </div></div>
+  <div class="section task"><div class="head">タスク管理</div><div class="body" style="display:block;padding:0;">
+    <table><tbody>
+      <tr><td><span class="pri high">高</span></td><td>テスト案件</td><td>サンプル詳細</td><td>2026-08-01</td><td>未着手</td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<div class="option blue1">
+  <div class="option-label">青系①（穏やかな空色寄り）</div>
+  <div class="section leave"><div class="head">休暇・研修・外出（本社・他現場・テレワークなど）</div><div class="body">
+    <div class="card">石井<span class="badge holiday">休暇</span></div>
+    <div class="card">宮井<span class="badge training">研修</span></div>
+    <div class="card">渡邉<span class="badge outing">外出</span></div>
+  </div></div>
+</div>
+
+<div class="option blue2">
+  <div class="option-label">青系②（やや濃いネイビー寄り）</div>
+  <div class="section leave"><div class="head">休暇・研修・外出（本社・他現場・テレワークなど）</div><div class="body">
+    <div class="card">石井<span class="badge holiday">休暇</span></div>
+    <div class="card">宮井<span class="badge training">研修</span></div>
+    <div class="card">渡邉<span class="badge outing">外出</span></div>
+  </div></div>
+</div>
+
+<div class="option blue3">
+  <div class="option-label">青系③（グレイッシュな淡い青）</div>
+  <div class="section leave"><div class="head">休暇・研修・外出（本社・他現場・テレワークなど）</div><div class="body">
+    <div class="card">石井<span class="badge holiday">休暇</span></div>
+    <div class="card">宮井<span class="badge training">研修</span></div>
+    <div class="card">渡邉<span class="badge outing">外出</span></div>
+  </div></div>
+</div>

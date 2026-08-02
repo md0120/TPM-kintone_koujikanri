@@ -1,0 +1,828 @@
+<title>チームタスク・予定管理（プレビュー）</title>
+<style>
+:root {
+  --bg: #F5F6F3;
+  --surface: #FFFFFF;
+  --surface-2: #EEF0EA;
+  --border: #DCE2DB;
+  --text: #1C2420;
+  --text-2: #5B665F;
+  --text-3: #8B968E;
+  --accent: #2F6F63;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E3EFEA;
+  --warn: #B57A1F;
+  --warn-soft: #F5E9D4;
+  --crit: #B23A2E;
+  --crit-soft: #F6E2DE;
+  --good: #367A54;
+  --good-soft: #E1EFE5;
+  --shadow: 0 1px 2px rgba(20, 30, 25, 0.06), 0 6px 20px -8px rgba(20, 30, 25, 0.18);
+}
+
+:root[data-theme="dark"] {
+  --bg: #14181A;
+  --surface: #1B2124;
+  --surface-2: #20272A;
+  --border: #2B3336;
+  --text: #E7ECE9;
+  --text-2: #9AA6A0;
+  --text-3: #6D7874;
+  --accent: #5CB8A2;
+  --accent-ink: #0D1A17;
+  --accent-soft: #1E3430;
+  --warn: #D9A24B;
+  --warn-soft: #35301F;
+  --crit: #E0645A;
+  --crit-soft: #3A2422;
+  --good: #64C48A;
+  --good-soft: #1C3226;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -10px rgba(0, 0, 0, 0.55);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14181A;
+    --surface: #1B2124;
+    --surface-2: #20272A;
+    --border: #2B3336;
+    --text: #E7ECE9;
+    --text-2: #9AA6A0;
+    --text-3: #6D7874;
+    --accent: #5CB8A2;
+    --accent-ink: #0D1A17;
+    --accent-soft: #1E3430;
+    --warn: #D9A24B;
+    --warn-soft: #35301F;
+    --crit: #E0645A;
+    --crit-soft: #3A2422;
+    --good: #64C48A;
+    --good-soft: #1C3226;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -10px rgba(0, 0, 0, 0.55);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Noto Sans JP", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.app {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 22px 24px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.brand-mark {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: translateY(-1px);
+  flex: none;
+}
+
+.brand h1 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.today {
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+.preview-flag {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 3px 10px;
+}
+
+/* ---------- Section shell ---------- */
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-head .label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-head h2 {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.section-head .count {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.ghost-btn {
+  font-size: 12px;
+  color: var(--text-2);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.ghost-btn:hover { color: var(--text); border-color: var(--text-3); }
+.ghost-btn:focus-visible, .tab:focus-visible, .member-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Section A: leave / training / outing ---------- */
+.leave-add-form {
+  display: none;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.leave-add-form.open { display: flex; }
+.leave-add-form select,
+.leave-add-form input {
+  font: inherit;
+  font-size: 12.5px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 9px;
+  color: var(--text);
+}
+.leave-add-form input[type="text"] { flex: 1; min-width: 130px; }
+.leave-add-form button {
+  border: none;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  border-radius: 7px;
+  padding: 0 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.leave-strip {
+  display: flex;
+  gap: 10px;
+  padding: 14px 18px;
+  overflow-x: auto;
+}
+
+.leave-card {
+  flex: none;
+  width: 208px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--surface);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 100px;
+  width: fit-content;
+  letter-spacing: 0.02em;
+}
+.badge.holiday { background: var(--good-soft); color: var(--good); }
+.badge.training { background: var(--accent-soft); color: var(--accent); }
+.badge.outing { background: var(--warn-soft); color: var(--warn); }
+
+.leave-name { font-weight: 600; font-size: 13px; }
+.leave-date { color: var(--text-2); font-size: 12px; }
+.leave-memo { color: var(--text-3); font-size: 11.5px; }
+
+/* ---------- Section B: tasks ---------- */
+.task-body {
+  display: grid;
+  grid-template-columns: 168px 1fr;
+  min-height: 430px;
+}
+
+.member-rail {
+  border-right: 1px solid var(--border);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface-2);
+}
+
+.member-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-2);
+  text-align: left;
+}
+.member-chip:hover { background: var(--surface); color: var(--text); }
+.member-chip.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text-2);
+  font-size: 10.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.member-chip.active .avatar { background: var(--accent); color: var(--accent-ink); }
+
+.chip-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-3);
+}
+.member-chip.active .chip-count { color: var(--accent); }
+
+.task-panel { padding: 6px 18px 18px; }
+
+.task-row {
+  display: grid;
+  grid-template-columns: 168px 1fr 72px 132px 56px;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.task-row:last-child { border-bottom: none; }
+
+.task-title { font-size: 13.5px; font-weight: 600; }
+.task-sub { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
+.task-detail { font-size: 12.5px; color: var(--text-2); }
+
+.due { font-size: 12px; color: var(--text-2); }
+.due.soon { color: var(--crit); font-weight: 700; }
+
+.status-input {
+  width: 100%;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 5px 9px;
+}
+.status-input:hover { border-color: var(--border); }
+.status-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.pri {
+  justify-self: end;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+.pri.high { background: var(--crit-soft); color: var(--crit); }
+.pri.mid { background: var(--warn-soft); color: var(--warn); }
+.pri.low { background: var(--surface-2); color: var(--text-3); }
+
+.col-heads {
+  display: grid;
+  grid-template-columns: 168px 1fr 72px 132px 56px;
+  gap: 14px;
+  padding: 10px 4px 8px;
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
+}
+.col-heads span:last-child { text-align: right; }
+
+/* ---------- Member management ---------- */
+.rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px 8px;
+}
+.rail-head span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+}
+.rail-edit-toggle {
+  border: none;
+  background: none;
+  color: var(--text-3);
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.rail-edit-toggle:hover { color: var(--accent); background: var(--surface); }
+.rail-edit-toggle.on { color: var(--accent); font-weight: 700; }
+
+.member-row { display: flex; align-items: center; gap: 4px; }
+.member-row .member-chip { flex: 1; min-width: 0; }
+
+.member-remove {
+  display: none;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+.member-remove:hover { color: var(--crit); background: var(--crit-soft); }
+.member-rail.editing .member-remove { display: block; }
+.member-rail.editing .member-chip .chip-count { display: none; }
+
+.member-name-input {
+  display: none;
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 8px;
+  color: var(--text);
+}
+.member-rail.editing .member-chip { display: none; }
+.member-rail.editing .member-name-input { display: block; }
+
+.member-add-row {
+  display: none;
+  gap: 6px;
+  padding: 8px 2px 2px;
+  border-top: 1px dashed var(--border);
+  margin-top: 6px;
+}
+.member-rail.editing .member-add-row { display: flex; }
+.member-add-row input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 12.5px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 8px;
+  color: var(--text);
+}
+.member-add-row button {
+  flex: none;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 7px;
+  padding: 0 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.member-add-row button:disabled { opacity: 0.4; cursor: default; }
+
+@media (max-width: 720px) {
+  .task-body { grid-template-columns: 1fr; }
+  .member-rail { flex-direction: column; border-right: none; border-bottom: 1px solid var(--border); }
+  .task-row, .col-heads { grid-template-columns: 1fr 60px; }
+  .task-row .task-detail, .task-row .status-input, .task-row .pri,
+  .col-heads span:nth-child(2), .col-heads span:nth-child(4), .col-heads span:nth-child(5) { display: none; }
+}
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <h1>チームタスク・予定管理</h1>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span class="today num">2026年7月28日（火）</span>
+      <span class="preview-flag">PREVIEW — イメージ確認用</span>
+    </div>
+  </div>
+
+  <!-- Section A: 休暇・研修・外出（上段） -->
+  <section class="section" style="flex: 1;">
+    <div class="section-head">
+      <div class="label">
+        <h2>休暇・研修・外出予定</h2>
+        <span class="count num" id="leaveCount">7件</span>
+      </div>
+      <button class="ghost-btn" type="button" id="leaveAddToggle">＋ 予定を追加</button>
+    </div>
+    <div class="leave-add-form" id="leaveAddForm">
+      <select id="leaveMemberSelect" aria-label="氏名"></select>
+      <select id="leaveTypeSelect" aria-label="種別">
+        <option value="holiday">休暇</option>
+        <option value="training">研修</option>
+        <option value="outing">外出</option>
+      </select>
+      <input type="text" id="leaveDateInput" placeholder="例：8/10（月）終日">
+      <input type="text" id="leaveMemoInput" placeholder="内容・メモ">
+      <button type="button" id="leaveAddBtn">追加</button>
+    </div>
+    <div class="leave-strip" id="leaveStrip">
+      <div class="leave-card">
+        <span class="badge holiday">休暇</span>
+        <span class="leave-name">田畑</span>
+        <span class="leave-date num">7/29（水）終日</span>
+        <span class="leave-memo">私用のため</span>
+      </div>
+      <div class="leave-card">
+        <span class="badge training">研修</span>
+        <span class="leave-name">宮井</span>
+        <span class="leave-date num">7/30（木）13:00–17:00</span>
+        <span class="leave-memo">防災設備点検資格 更新講習</span>
+      </div>
+      <div class="leave-card">
+        <span class="badge outing">外出</span>
+        <span class="leave-name">石井</span>
+        <span class="leave-date num">7/31（金）10:00–12:00</span>
+        <span class="leave-memo">TMES 現地打合せ</span>
+      </div>
+      <div class="leave-card">
+        <span class="badge holiday">休暇</span>
+        <span class="leave-name">渡邉</span>
+        <span class="leave-date num">8/3（月）午後</span>
+        <span class="leave-memo">通院</span>
+      </div>
+      <div class="leave-card">
+        <span class="badge outing">外出</span>
+        <span class="leave-name">山本</span>
+        <span class="leave-date num">8/4（火）終日</span>
+        <span class="leave-memo">橋本産業 現場立会い</span>
+      </div>
+      <div class="leave-card">
+        <span class="badge training">研修</span>
+        <span class="leave-name">藤原</span>
+        <span class="leave-date num">8/5（水）9:00–15:00</span>
+        <span class="leave-memo">高圧受電設備 保安講習</span>
+      </div>
+      <div class="leave-card">
+        <span class="badge holiday">休暇</span>
+        <span class="leave-name">福島</span>
+        <span class="leave-date num">8/6（木）終日</span>
+        <span class="leave-memo">夏季休暇</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section B: タスク管理（下段） -->
+  <section class="section" style="flex: 3;">
+    <div class="section-head">
+      <div class="label">
+        <h2>タスク管理</h2>
+        <span class="count num" id="taskCount">6件</span>
+      </div>
+      <button class="ghost-btn" type="button">＋ タスクを追加</button>
+    </div>
+    <div class="task-body">
+      <nav class="member-rail" id="memberRail" aria-label="担当者で絞り込み">
+        <div class="rail-head">
+          <span>担当者</span>
+          <button class="rail-edit-toggle" id="railEditToggle" type="button">編集</button>
+        </div>
+        <button class="member-chip active" data-member="all"><span class="avatar">全</span>全員<span class="chip-count num">6</span></button>
+
+        <div class="member-row" data-member-row="田畑">
+          <button class="member-chip" data-member="田畑"><span class="avatar">田</span>田畑<span class="chip-count num">1</span></button>
+          <input class="member-name-input" value="田畑">
+          <button class="member-remove" type="button" aria-label="田畑を削除">✕</button>
+        </div>
+        <div class="member-row" data-member-row="宮井">
+          <button class="member-chip" data-member="宮井"><span class="avatar">宮</span>宮井<span class="chip-count num">1</span></button>
+          <input class="member-name-input" value="宮井">
+          <button class="member-remove" type="button" aria-label="宮井を削除">✕</button>
+        </div>
+        <div class="member-row" data-member-row="渡邉">
+          <button class="member-chip" data-member="渡邉"><span class="avatar">渡</span>渡邉<span class="chip-count num">1</span></button>
+          <input class="member-name-input" value="渡邉">
+          <button class="member-remove" type="button" aria-label="渡邉を削除">✕</button>
+        </div>
+        <div class="member-row" data-member-row="山本">
+          <button class="member-chip" data-member="山本"><span class="avatar">山</span>山本<span class="chip-count num">1</span></button>
+          <input class="member-name-input" value="山本">
+          <button class="member-remove" type="button" aria-label="山本を削除">✕</button>
+        </div>
+        <div class="member-row" data-member-row="石井">
+          <button class="member-chip" data-member="石井"><span class="avatar">石</span>石井<span class="chip-count num">2</span></button>
+          <input class="member-name-input" value="石井">
+          <button class="member-remove" type="button" aria-label="石井を削除">✕</button>
+        </div>
+        <div class="member-row" data-member-row="藤原">
+          <button class="member-chip" data-member="藤原"><span class="avatar">藤</span>藤原<span class="chip-count num">0</span></button>
+          <input class="member-name-input" value="藤原">
+          <button class="member-remove" type="button" aria-label="藤原を削除">✕</button>
+        </div>
+        <div class="member-row" data-member-row="福島">
+          <button class="member-chip" data-member="福島"><span class="avatar">福</span>福島<span class="chip-count num">0</span></button>
+          <input class="member-name-input" value="福島">
+          <button class="member-remove" type="button" aria-label="福島を削除">✕</button>
+        </div>
+
+        <div class="member-add-row">
+          <input type="text" id="newMemberName" placeholder="新しい担当者名">
+          <button type="button" id="addMemberBtn">＋ 追加</button>
+        </div>
+      </nav>
+      <div class="task-panel">
+        <div class="col-heads">
+          <span>案件</span>
+          <span>詳細</span>
+          <span>期限</span>
+          <span>進捗状況</span>
+          <span>優先度</span>
+        </div>
+        <div id="taskList">
+          <div class="task-row" data-member="田畑">
+            <div><div class="task-title">月次報告書</div><div class="task-sub">田畑</div></div>
+            <div class="task-detail">工事一覧の実施状況をとりまとめて提出</div>
+            <div class="due soon num">7/29</div>
+            <input class="status-input" value="下書き作成中">
+            <span class="pri high">高</span>
+          </div>
+          <div class="task-row" data-member="宮井">
+            <div><div class="task-title">防災設備 定期点検</div><div class="task-sub">宮井</div></div>
+            <div class="task-detail">両棟 防災盤・ITVネットワークレコーダーの点検日程を協力会社と調整</div>
+            <div class="due num">8/1</div>
+            <input class="status-input" value="日程調整中（返信待ち）">
+            <span class="pri mid">中</span>
+          </div>
+          <div class="task-row" data-member="石井">
+            <div><div class="task-title">TMES 見積確認</div><div class="task-sub">石井</div></div>
+            <div class="task-detail">空調機全熱交換器修繕工事の見積書を確認し返信</div>
+            <div class="due soon num">7/30</div>
+            <input class="status-input" value="金額を社内確認中">
+            <span class="pri high">高</span>
+          </div>
+          <div class="task-row" data-member="渡邉">
+            <div><div class="task-title">水道メーター類更新工事</div><div class="task-sub">渡邉</div></div>
+            <div class="task-detail">施工写真の整理・報告書への添付</div>
+            <div class="due num">8/5</div>
+            <input class="status-input" value="未着手">
+            <span class="pri low">低</span>
+          </div>
+          <div class="task-row" data-member="山本">
+            <div><div class="task-title">橋本産業 現場立会い</div><div class="task-sub">山本</div></div>
+            <div class="task-detail">受水槽更新工事の立会い準備・持ち物確認</div>
+            <div class="due num">8/4</div>
+            <input class="status-input" value="準備リスト作成済み">
+            <span class="pri mid">中</span>
+          </div>
+          <div class="task-row" data-member="石井">
+            <div><div class="task-title">脱臭装置修繕</div><div class="task-sub">石井</div></div>
+            <div class="task-detail">工程表（app43）への日程反映を確認</div>
+            <div class="due num">8/6</div>
+            <input class="status-input" value="未着手">
+            <span class="pri low">低</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var rail = document.getElementById('memberRail');
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#taskList .task-row'));
+  var countEl = document.getElementById('taskCount');
+
+  function applyFilter(member) {
+    var visible = 0;
+    rows.forEach(function (row) {
+      var match = member === 'all' || row.getAttribute('data-member') === member;
+      row.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+    countEl.textContent = visible + '件';
+  }
+
+  rail.addEventListener('click', function (e) {
+    var btn = e.target.closest('.member-chip');
+    if (!btn || rail.classList.contains('editing')) return;
+    rail.querySelectorAll('.member-chip').forEach(function (c) { c.classList.remove('active'); });
+    btn.classList.add('active');
+    applyFilter(btn.getAttribute('data-member'));
+  });
+
+  // ---- 担当者の追加・編集（プレビュー動作） ----
+  var editToggle = document.getElementById('railEditToggle');
+  var addRow = rail.querySelector('.member-add-row');
+  var newNameInput = document.getElementById('newMemberName');
+  var addBtn = document.getElementById('addMemberBtn');
+
+  editToggle.addEventListener('click', function () {
+    var editing = rail.classList.toggle('editing');
+    editToggle.classList.toggle('on', editing);
+    editToggle.textContent = editing ? '完了' : '編集';
+  });
+
+  rail.addEventListener('click', function (e) {
+    var removeBtn = e.target.closest('.member-remove');
+    if (!removeBtn) return;
+    var row = removeBtn.closest('.member-row');
+    var wasActive = row.querySelector('.member-chip').classList.contains('active');
+    row.remove();
+    if (wasActive) {
+      var allChip = rail.querySelector('.member-chip[data-member="all"]');
+      allChip.classList.add('active');
+      applyFilter('all');
+    }
+    refreshLeaveMemberSelect();
+  });
+
+  rail.querySelectorAll('.member-name-input').forEach(function (input) {
+    input.addEventListener('change', function () {
+      var row = input.closest('.member-row');
+      var chip = row.querySelector('.member-chip');
+      var oldMember = chip.getAttribute('data-member');
+      var newName = input.value.trim() || oldMember;
+      input.value = newName;
+      chip.querySelector('.avatar').textContent = newName.charAt(0);
+      chip.childNodes[chip.childNodes.length - 2].textContent = newName;
+      chip.setAttribute('data-member', newName);
+      row.setAttribute('data-member-row', newName);
+      rows.forEach(function (r) {
+        if (r.getAttribute('data-member') === oldMember) r.setAttribute('data-member', newName);
+      });
+      document.querySelectorAll('.leave-card').forEach(function (card) {
+        var nameEl = card.querySelector('.leave-name');
+        if (nameEl.textContent === oldMember) nameEl.textContent = newName;
+      });
+      refreshLeaveMemberSelect();
+    });
+  });
+
+  function addMember() {
+    var name = newNameInput.value.trim();
+    if (!name) return;
+    var row = document.createElement('div');
+    row.className = 'member-row';
+    row.setAttribute('data-member-row', name);
+    row.innerHTML =
+      '<button class="member-chip" data-member="' + name + '">' +
+      '<span class="avatar">' + name.charAt(0) + '</span>' + name +
+      '<span class="chip-count num">0</span></button>' +
+      '<input class="member-name-input" value="' + name + '">' +
+      '<button class="member-remove" type="button" aria-label="' + name + 'を削除">✕</button>';
+    rail.insertBefore(row, addRow);
+    row.querySelector('.member-name-input').addEventListener('change', function () {
+      var chip = row.querySelector('.member-chip');
+      var newName = this.value.trim() || name;
+      chip.querySelector('.avatar').textContent = newName.charAt(0);
+      chip.childNodes[chip.childNodes.length - 2].textContent = newName;
+      chip.setAttribute('data-member', newName);
+      refreshLeaveMemberSelect();
+    });
+    newNameInput.value = '';
+    newNameInput.focus();
+    refreshLeaveMemberSelect();
+  }
+
+  addBtn.addEventListener('click', addMember);
+  newNameInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') addMember();
+  });
+
+  // ---- 休暇・研修・外出予定：担当者リストを共有して追加フォームに反映 ----
+  function getMemberNames() {
+    return Array.prototype.slice.call(rail.querySelectorAll('.member-row .member-chip'))
+      .map(function (c) { return c.getAttribute('data-member'); });
+  }
+
+  var leaveMemberSelect = document.getElementById('leaveMemberSelect');
+  function refreshLeaveMemberSelect() {
+    var current = leaveMemberSelect.value;
+    leaveMemberSelect.innerHTML = '';
+    getMemberNames().forEach(function (name) {
+      var opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      leaveMemberSelect.appendChild(opt);
+    });
+    if (getMemberNames().indexOf(current) !== -1) leaveMemberSelect.value = current;
+  }
+  refreshLeaveMemberSelect();
+
+  var leaveAddToggle = document.getElementById('leaveAddToggle');
+  var leaveAddForm = document.getElementById('leaveAddForm');
+  var leaveStrip = document.getElementById('leaveStrip');
+  var leaveCountEl = document.getElementById('leaveCount');
+  var typeLabel = { holiday: '休暇', training: '研修', outing: '外出' };
+
+  leaveAddToggle.addEventListener('click', function () {
+    leaveAddForm.classList.toggle('open');
+  });
+
+  document.getElementById('leaveAddBtn').addEventListener('click', function () {
+    var member = leaveMemberSelect.value;
+    var type = document.getElementById('leaveTypeSelect').value;
+    var dateVal = document.getElementById('leaveDateInput').value.trim();
+    var memoVal = document.getElementById('leaveMemoInput').value.trim();
+    if (!member || !dateVal) { document.getElementById('leaveDateInput').focus(); return; }
+
+    var card = document.createElement('div');
+    card.className = 'leave-card';
+    card.innerHTML =
+      '<span class="badge ' + type + '">' + typeLabel[type] + '</span>' +
+      '<span class="leave-name">' + member + '</span>' +
+      '<span class="leave-date num">' + dateVal + '</span>' +
+      '<span class="leave-memo">' + (memoVal || '（メモなし）') + '</span>';
+    leaveStrip.appendChild(card);
+    leaveCountEl.textContent = leaveStrip.children.length + '件';
+
+    document.getElementById('leaveDateInput').value = '';
+    document.getElementById('leaveMemoInput').value = '';
+    leaveAddForm.classList.remove('open');
+  });
+})();
+</script>
