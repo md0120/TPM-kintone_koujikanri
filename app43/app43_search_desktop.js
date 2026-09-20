@@ -67,6 +67,7 @@ return compareKoji(a, b);
 var COL_WIDTH = 26;
 var ROW_HEAD_WIDTH = 220;
 var BAR_HEIGHT = 18;
+var MONTH_ROW_HEIGHT = 16; // 見出し1段目（年月）の高さ。2段目（日付・曜日）のsticky top算出に使う
 var BAR_GAP = 2;
 var ROW_PADDING = 20;
 var MONTH_SPAN = 12;
@@ -145,7 +146,8 @@ return m >= 4 ? y : y - 1;
 function parseState() {
 var params = new URLSearchParams(location.search);
 var year = params.get('smc_year') || '';
-var tpm = params.get('smc_tpm') || '';
+var tpmRaw = params.get('smc_tpm') || '';
+var tpm = tpmRaw ? tpmRaw.split(',') : []; // 主担当：チェックボックス複数選択のため配列
 var koji = params.get('smc_koji') || '';
 var progress = params.get('smc_progress') || '';
 var offset = parseInt(params.get('smc_offset') || '0', 10) || 0;
@@ -154,8 +156,9 @@ return { year: year, tpm: tpm, koji: koji, progress: progress, offset: offset };
 
 function buildUrl(year, tpm, koji, progress, offset) {
 var url = new URL(location.href);
+var tpmArr = Array.isArray(tpm) ? tpm : (tpm ? [tpm] : []);
 if (year) url.searchParams.set('smc_year', year); else url.searchParams.delete('smc_year');
-if (tpm) url.searchParams.set('smc_tpm', tpm); else url.searchParams.delete('smc_tpm');
+if (tpmArr.length) url.searchParams.set('smc_tpm', tpmArr.join(',')); else url.searchParams.delete('smc_tpm');
 if (koji) url.searchParams.set('smc_koji', koji); else url.searchParams.delete('smc_koji');
 if (progress) url.searchParams.set('smc_progress', progress); else url.searchParams.delete('smc_progress');
 if (offset) url.searchParams.set('smc_offset', offset); else url.searchParams.delete('smc_offset');
@@ -184,7 +187,11 @@ cb(vals);
 function fetchRecords(year, tpm, koji, cb) {
 var conds = [];
 if (year) conds.push(FIELD_YEAR + ' = "' + esc(year) + '"');
-if (tpm) conds.push(FIELD_TPM + ' = "' + esc(tpm) + '"');
+var tpmArr = Array.isArray(tpm) ? tpm : (tpm ? [tpm] : []);
+if (tpmArr.length) {
+var tpmOrs = tpmArr.map(function(t) { return FIELD_TPM + ' = "' + esc(t) + '"'; }).join(' or ');
+conds.push(tpmArr.length > 1 ? '(' + tpmOrs + ')' : tpmOrs);
+}
 if (koji) conds.push(FIELD_KOJI + ' like "*' + esc(koji) + '*"');
 var query = conds.join(' and ') + (conds.length ? ' ' : '') + 'limit 500';
 kintone.api(kintone.api.url('/k/v1/records.json', true), 'GET', {
@@ -531,6 +538,19 @@ style.textContent =
 '.gaia-argoui-app-toolbar, .gaia-argoui-app-index-toolbar { min-height: 0 !important; height: auto !important; padding: 0 !important; margin: 0 !important; }' +
 '#smc-gantt-root { font-size: 12px; }' +
 '#smc-gantt-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 4px 12px 4px 12px; margin-top: 0; transform: scale(0.8); transform-origin: left top; }' +
+'.smc43-cb-wrap { position: relative; display: inline-block; }' +
+'.smc43-cb-btn { font-size: 13px; padding: 4px 10px; border: 1px solid #999; border-radius: 4px; background: #fff; cursor: pointer; white-space: nowrap; }' +
+'.smc43-cb-btn.smc43-cb-active { border-color: #3b82f6; color: #2563eb; font-weight: bold; }' +
+// position:fixedで#smc-gantt-filter（transform:scale(0.8)指定）の外（document.body直下）に
+// 表示する。transformを持つ祖先の内側にposition:absoluteで置くと、Chromeの描画バグで
+// チェックボックスのテキストだけが描画されない現象が起きるため。
+'.smc43-cb-panel { position: fixed; background: #fff; border: 1px solid #999; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); padding: 8px; z-index: 100000; min-width: 140px; max-height: 260px; overflow-y: auto; }' +
+'.smc43-cb-option { display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 4px 2px; white-space: nowrap; cursor: pointer; }' +
+'.smc43-cb-option:hover { background: #f0f4f8; }' +
+'.smc43-cb-btnrow { display: flex; justify-content: space-between; gap: 6px; margin-top: 6px; padding-top: 6px; border-top: 1px solid #ddd; }' +
+'.smc43-cb-btnrow button { font-size: 12px; padding: 4px 10px; border-radius: 4px; cursor: pointer; }' +
+'.smc43-cb-clear { border: 1px solid #aaa; background: #fff; color: #555; }' +
+'.smc43-cb-apply { border: none; background: #3b82f6; color: #fff; font-weight: bold; }' +
 '.smc-gantt-toolbtn { border: 1px solid #999 !important; border-radius: 4px !important; }' +
 '.kintone-app-headermenu-space { display: block !important; width: 100% !important; }' +
 '#smc-gantt-root { max-width: 95vw; }' +
@@ -543,8 +563,19 @@ style.textContent =
 'text-align: left; padding: 2px 6px; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;' +
 '}' +
 'table#smc-gantt-table thead th { position: sticky; top: 0; z-index: 4; background: #f2f2f2; font-size: 10px; text-align: center; }' +
+// 月（年月）行と日付・曜日行の2段見出しはどちらもposition:stickyでtop:0のままだと
+// 縦スクロール時に同じ位置へ重なり合い、後段（日付・曜日）が前段（年月）を覆い隠して
+// 見えなくなる。月行の高さを明示的に固定した上で、日付・曜日行はその高さぶんだけ
+// topをずらし、2段とも表示され続けるようにする（smc-rowheadはrowSpan=2で全体に
+// またがるのでtop:0のままでよい）。
+'table#smc-gantt-table thead tr:first-child th:not(.smc-rowhead) { height: ' + MONTH_ROW_HEIGHT + 'px; box-sizing: border-box; }' +
+'table#smc-gantt-table thead tr:last-child th { top: ' + MONTH_ROW_HEIGHT + 'px; }' +
 'table#smc-gantt-table thead th.smc-rowhead { z-index: 6; }' +
 '.smc-rowhead-resizer { position: absolute; top: 0; right: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 7; }' +
+'.smc-koji-header-label { font-size: 150%; font-weight: bold; }' +
+'.smc-koji-legend { position: absolute; right: 6px; bottom: 3px; text-align: right; line-height: 1.3; font-size: 11px; font-weight: normal; pointer-events: none; }' +
+'.smc-koji-legend-red { color: #c0392b; }' +
+'.smc-koji-legend-black { color: #000; }' +
 'table#smc-gantt-table td.smc-day-cell { width: ' + COL_WIDTH + 'px; min-width: ' + COL_WIDTH + 'px; max-width: ' + COL_WIDTH + 'px; position: relative; }' +
 'td.smc-holiday { background-color: #fdecea !important; }' +
 'td.smc-saturday { background-color: #eaf2fd !important; }' +
@@ -594,6 +625,94 @@ var tip = document.getElementById('smc-bar-tooltip');
 if (tip) tip.style.display = 'none';
 }
 
+function closeAllTpmPanels(except) {
+document.querySelectorAll('.smc43-cb-panel').forEach(function(p) {
+if (p !== except) p.style.display = 'none';
+});
+}
+
+// 主担当のExcelライクなチェックボックス複数選択ドロップダウンを構築する。
+// applyBtnを押した時点でonApply(選択中の値の配列)を呼ぶ。
+function buildTpmCheckboxDropdown(container, choices, currentValues, onApply) {
+container.innerHTML = '';
+// パネルはdocument.body直下に置く（containerの外）ため、containerをクリアしただけでは
+// 前回分のパネルが残ってしまう。再構築のたびに必ず古いパネルを片付けておく。
+document.querySelectorAll('.smc43-cb-panel').forEach(function(p) { p.remove(); });
+var wrap = document.createElement('div');
+wrap.className = 'smc43-cb-wrap';
+
+var btn = document.createElement('button');
+btn.type = 'button';
+btn.className = 'smc43-cb-btn';
+function updateBtnLabel() {
+btn.textContent = currentValues.length ? '主担当（' + currentValues.length + '）' : '主担当';
+btn.classList.toggle('smc43-cb-active', currentValues.length > 0);
+}
+updateBtnLabel();
+
+var panel = document.createElement('div');
+panel.className = 'smc43-cb-panel';
+panel.style.display = 'none';
+
+choices.forEach(function(c) {
+var optLabel = document.createElement('label');
+optLabel.className = 'smc43-cb-option';
+var cb = document.createElement('input');
+cb.type = 'checkbox';
+cb.value = c;
+cb.checked = currentValues.indexOf(c) !== -1;
+optLabel.appendChild(cb);
+optLabel.appendChild(document.createTextNode(c));
+panel.appendChild(optLabel);
+});
+
+var btnRow = document.createElement('div');
+btnRow.className = 'smc43-cb-btnrow';
+
+var clearBtn = document.createElement('button');
+clearBtn.type = 'button';
+clearBtn.className = 'smc43-cb-clear';
+clearBtn.textContent = 'クリア';
+clearBtn.addEventListener('click', function() {
+panel.querySelectorAll('input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+});
+
+var applyBtn = document.createElement('button');
+applyBtn.type = 'button';
+applyBtn.className = 'smc43-cb-apply';
+applyBtn.textContent = '適用';
+applyBtn.addEventListener('click', function() {
+var vals = Array.prototype.map.call(panel.querySelectorAll('input[type=checkbox]:checked'), function(cb) { return cb.value; });
+onApply(vals);
+});
+
+btnRow.appendChild(clearBtn);
+btnRow.appendChild(applyBtn);
+panel.appendChild(btnRow);
+
+btn.addEventListener('click', function(e) {
+e.stopPropagation();
+var isOpen = panel.style.display !== 'none';
+closeAllTpmPanels(null);
+if (!isOpen) {
+var r = btn.getBoundingClientRect();
+panel.style.top = r.bottom + 'px';
+panel.style.left = r.left + 'px';
+}
+panel.style.display = isOpen ? 'none' : 'block';
+});
+
+// パネル内（チェックボックス等）のクリックがdocumentまで伝播すると、
+// 全パネルを閉じるドキュメント全体のクリックリスナーが反応してしまい、
+// チェックのたびにパネルが閉じてしまう。パネル内クリックは伝播を止める。
+panel.addEventListener('click', function(e) { e.stopPropagation(); });
+
+wrap.appendChild(btn);
+document.body.appendChild(panel);
+container.appendChild(wrap);
+}
+document.addEventListener('click', function() { closeAllTpmPanels(null); });
+
 function buildFilterUi(space, state, allKoji, onchange) {
 var wrap = document.createElement('div');
 wrap.id = 'smc-gantt-filter';
@@ -610,19 +729,22 @@ tpmLabel.textContent = '主担当';
 tpmLabel.style.marginLeft = '8px';
 wrap.appendChild(tpmLabel);
 
-var tpmSelect = document.createElement('select');
-wrap.appendChild(tpmSelect);
+// 主担当はプルダウン単一選択から、Excelのようなチェックボックス複数選択に変更。
+// 選択肢（fetchDistinctの結果）が届くまでは空のプレースホルダーとして用意しておき、
+// 届き次第buildTpmCheckboxDropdown()で中身を差し込む。
+var tpmWrap = document.createElement('span');
+wrap.appendChild(tpmWrap);
 
 var progressLabel = document.createElement('span');
-progressLabel.textContent = '進捗';
+progressLabel.textContent = '表示';
 progressLabel.style.marginLeft = '8px';
 wrap.appendChild(progressLabel);
 
 var progressSelect = document.createElement('select');
 wrap.appendChild(progressSelect);
-['すべて', '工事中'].forEach(function(p) {
+['全件', '工事中'].forEach(function(p) {
 var opt = document.createElement('option');
-opt.value = p === 'すべて' ? '' : p;
+opt.value = p === '全件' ? '' : p;
 opt.textContent = p;
 if (opt.value === state.progress) opt.selected = true;
 progressSelect.appendChild(opt);
@@ -772,26 +894,17 @@ location.href = buildUrl(defaultYear, state.tpm, state.koji, state.progress, sta
 
 fetchDistinct(kintone.app.getId(), FIELD_TPM, function(tpms) {
 tpms.sort();
-var allOpt = document.createElement('option');
-allOpt.value = '';
-allOpt.textContent = 'すべて';
-if (!state.tpm) allOpt.selected = true;
-tpmSelect.appendChild(allOpt);
-tpms.forEach(function(t) {
-var opt = document.createElement('option');
-opt.value = t;
-opt.textContent = t;
-if (t === state.tpm) opt.selected = true;
-tpmSelect.appendChild(opt);
+buildTpmCheckboxDropdown(tpmWrap, tpms, state.tpm, function(vals) {
+applyFilterChange(vals);
 });
 });
 
-function applyFilterChange() {
-location.href = buildUrl(yearSelect.value, tpmSelect.value, kojiInput.value.trim(), progressSelect.value, state.offset);
+function applyFilterChange(tpmOverride) {
+var tpmVal = tpmOverride !== undefined ? tpmOverride : state.tpm;
+location.href = buildUrl(yearSelect.value, tpmVal, kojiInput.value.trim(), progressSelect.value, state.offset);
 }
-yearSelect.addEventListener('change', applyFilterChange);
-tpmSelect.addEventListener('change', applyFilterChange);
-progressSelect.addEventListener('change', applyFilterChange);
+yearSelect.addEventListener('change', function() { applyFilterChange(); });
+progressSelect.addEventListener('change', function() { applyFilterChange(); });
 kojiInput.addEventListener('keydown', function(e) {
 if (e.key === 'Enter') applyFilterChange();
 });
@@ -865,8 +978,26 @@ var dayRow = document.createElement('tr');
 
 var monthHead = document.createElement('th');
 monthHead.className = 'smc-rowhead';
-monthHead.textContent = '工事名';
 monthHead.rowSpan = 2;
+
+var monthHeadLabel = document.createElement('span');
+monthHeadLabel.className = 'smc-koji-header-label';
+monthHeadLabel.textContent = '工事名';
+monthHead.appendChild(monthHeadLabel);
+
+// 工事名の色分け条件（赤＝着打ち前／黒＝着打ち済）の凡例。見出しセルの右下に配置。
+var legend = document.createElement('div');
+legend.className = 'smc-koji-legend';
+var legendRed = document.createElement('div');
+legendRed.className = 'smc-koji-legend-red';
+legendRed.textContent = '工事名：着打ち前';
+var legendBlack = document.createElement('div');
+legendBlack.className = 'smc-koji-legend-black';
+legendBlack.textContent = '工事名：着打ち済';
+legend.appendChild(legendRed);
+legend.appendChild(legendBlack);
+monthHead.appendChild(legend);
+
 enableRowheadResize(monthHead);
 monthRow.appendChild(monthHead);
 
@@ -1605,10 +1736,28 @@ dayRow.style.height = PRINT_DAY_ROW_H + 'px';
 var MONTH_CELL_BASE = 'box-sizing:border-box;overflow:hidden;line-height:1;height:' + PRINT_MONTH_ROW_H + 'px;';
 var DAY_CELL_BASE = 'box-sizing:border-box;overflow:hidden;height:' + PRINT_DAY_ROW_H + 'px;';
 
+// 画面版と同じく、凡例は見出しセルの右下に配置する。印刷版は縦の余白が
+// ほぼ無い（高さ32px）ため、1行にまとめて収める。
 var rh = document.createElement('th');
-rh.textContent = '工事名';
 rh.rowSpan = 2;
-rh.style.cssText = 'box-sizing:border-box;overflow:hidden;line-height:1;height:' + PRINT_HEADER_ROW_H + 'px;border:1px solid #999;background:#f2f2f2;font-size:9px;padding:2px 2px 0;';
+rh.style.cssText = 'box-sizing:border-box;overflow:hidden;line-height:1;height:' + PRINT_HEADER_ROW_H + 'px;border:1px solid #999;background:#f2f2f2;font-size:9px;padding:2px 2px 0;position:relative;text-align:left;';
+var rhLabel = document.createElement('span');
+rhLabel.textContent = '工事名';
+rhLabel.style.cssText = 'font-weight:bold;';
+rh.appendChild(rhLabel);
+
+var rhLegend = document.createElement('div');
+rhLegend.style.cssText = 'position:absolute;right:2px;bottom:1px;white-space:nowrap;line-height:1;font-size:9px;font-weight:normal;';
+var rhLegendRed = document.createElement('span');
+rhLegendRed.style.color = '#c0392b';
+rhLegendRed.textContent = '工事名：着打ち前';
+var rhLegendBlack = document.createElement('span');
+rhLegendBlack.style.color = '#000';
+rhLegendBlack.style.marginLeft = '4px';
+rhLegendBlack.textContent = '工事名：着打ち済';
+rhLegend.appendChild(rhLegendRed);
+rhLegend.appendChild(rhLegendBlack);
+rh.appendChild(rhLegend);
 monthRow.appendChild(rh);
 
 var i = 0;
@@ -1899,7 +2048,7 @@ result.wrapper.style.marginTop = '28px';
 // （テキスト表示時に発覚した不具合。ロゴ画像自体は最初から問題なかった）。
 var logo = document.createElement('img');
 logo.src = PRINT_LOGO_DATA_URI;
-logo.style.cssText = 'position:absolute;top:-24px;right:0;height:24px;';
+logo.style.cssText = 'position:absolute;top:calc(-24px - 2mm);right:0;height:24px;';
 result.wrapper.appendChild(logo);
 
 page.appendChild(result.wrapper);

@@ -144,6 +144,7 @@ style.textContent =
 '.smc54-col-heads, .smc54-task-row { display: grid; grid-template-columns: 64px 204px 360px 90px 1fr 60px; gap: 10px; align-items: center; }' +
 '.smc54-task-edit-form { display: grid; grid-template-columns: 64px 204px 360px 90px 1fr 130px; gap: 10px; align-items: center; padding: 8px 4px; border-bottom: 1px solid #eee; background: #f7f8f5; }' +
 '.smc54-task-edit-form input, .smc54-task-edit-form select { font-size: 12px; padding: 5px 8px; border: 1px solid #dce2db; border-radius: 6px; width: 100%; }' +
+'.smc54-edit-koji-wrap { display: flex; flex-direction: column; gap: 4px; }' +
 '.smc54-task-edit-form .smc54-edit-btn-row { display: flex; gap: 6px; }' +
 '.smc54-task-edit-form button { flex: 1; border: none; border-radius: 5px; padding: 6px 0; font-size: 11.5px; font-weight: 700; cursor: pointer; }' +
 '.smc54-task-edit-form .smc54-save-btn { background: #2f6f63; color: #fff; }' +
@@ -917,12 +918,18 @@ row.removeAttribute('data-member');
 var memberOptions = allMembers.map(function(n) {
 return '<option value="' + n + '"' + (n === r[FIELD_MEMBER].value ? ' selected' : '') + '>' + n + '</option>';
 }).join('');
+// 表示画面の「案件」列は案件名＋担当者を1セルにまとめている（smc54-task-title/-sub）。
+// 編集フォームも同じ列構成に合わせ、案件名入力欄と担当者選択欄を「案件」列の中で
+// 縦に並べる。こうしないと編集時だけ列が1つずつズレて見えてしまう。
 row.innerHTML =
 '<select class="smc54-edit-pri"><option value="高">高</option><option value="中">中</option><option value="低">低</option></select>' +
-'<select class="smc54-edit-member">' + memberOptions + '</select>' +
+'<div class="smc54-edit-koji-wrap">' +
 '<input type="text" class="smc54-edit-koji" value="' + (r[FIELD_KOJI].value || '').replace(/"/g, '&quot;') + '" placeholder="案件">' +
-'<input type="date" class="smc54-edit-date" value="' + (r[FIELD_DATE].value || '') + '">' +
+'<select class="smc54-edit-member">' + memberOptions + '</select>' +
+'</div>' +
 '<input type="text" class="smc54-edit-detail" value="' + (r[FIELD_DETAIL].value || '').replace(/"/g, '&quot;') + '" placeholder="詳細">' +
+'<input type="date" class="smc54-edit-date" value="' + (r[FIELD_DATE].value || '') + '">' +
+'<span></span>' +
 '<div class="smc54-edit-btn-row"><button type="button" class="smc54-save-btn">保存</button><button type="button" class="smc54-cancel-btn">キャンセル</button></div>';
 row.querySelector('.smc54-edit-pri').value = r[FIELD_PRIORITY].value || '低';
 

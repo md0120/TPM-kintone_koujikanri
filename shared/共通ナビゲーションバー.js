@@ -1,14 +1,30 @@
 (function() {
 'use strict';
 
+// app37は絞り込み条件（queryパラメータ）が無い状態で開くと、
+// 案件台帳_フィルターバー.js が「現在年度で絞り込んだ状態」へ自動的に
+// location.hrefでリダイレクトする（実質ページを2回読み込む＝画面が2回切り替わる
+// ように見える）。ナビゲーションバーのリンクにあらかじめ現在年度のqueryを
+// 付けておけば、そのリダイレクトが発生しなくなる。
+function getCurrentFiscalYear() {
+var d = new Date();
+var y = d.getFullYear();
+var m = d.getMonth() + 1;
+return m >= 4 ? y : y - 1;
+}
+
 var APPS = [
-{ id: 37, label: '工事一覧' },
+{ id: 37, label: '工事一覧', href: function() {
+// 「年度」は表示ラベルで、実際のフィールドコードは「数値」（案件台帳_フィルターバー.jsの
+// FIELD_YEARと同じ）。クエリにはフィールドコードを使う必要がある。
+return '/k/37/?query=' + encodeURIComponent('数値 = "' + getCurrentFiscalYear() + '"');
+} },
 { id: 38, label: 'TPM報告書' },
 { id: 40, label: '他報告書' },
-{ id: 43, label: '工程表' },
+{ id: 43, label: '工程管理' },
 { id: 45, label: '空調運転記録' },
-{ id: 54, label: 'タスク管理' },
-{ id: 55, label: '不在・休暇管理' },
+{ id: 54, label: '計画・タスク管理' },
+{ id: 55, label: '不在・休暇' },
 { id: 34, label: '連絡先' }
 ];
 
@@ -39,7 +55,7 @@ if (a.id === currentAppId) {
 link.className = 'current';
 link.href = '#';
 } else {
-link.href = '/k/' + a.id + '/';
+link.href = a.href ? a.href() : '/k/' + a.id + '/';
 }
 nav.appendChild(link);
 });

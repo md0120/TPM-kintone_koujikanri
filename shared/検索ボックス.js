@@ -2,7 +2,7 @@
 (function() {
   'use strict';
   var DATE_FIELD = '日付';
-  var LOOKUP_FIELD = 'ルックアップ';
+  var LOOKUP_FIELD = '工事名テキスト';
   var YEAR_SELECT_ID = 'smc-year-select2';
 
   function fiscalYearOf(dateStr) {

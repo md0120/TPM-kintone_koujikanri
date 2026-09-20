@@ -86,7 +86,7 @@
         var conds = [];
         conds.push('日付 >= "' + y + '-04-01" and 日付 <= "' + (y+1) + '-03-31"');
         var nameVal = nameInput.value.trim();
-        if (nameVal) conds.push('ルックアップ like "' + nameVal.replace(/"/g,'') + '"');
+        if (nameVal) conds.push('工事名テキスト like "' + nameVal.replace(/"/g,'') + '"');
         var query = conds.join(' and ');
         location.href = '/k/m/' + appId + '/?query=' + encodeURIComponent(query);
       };

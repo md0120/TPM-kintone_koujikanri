@@ -22,6 +22,7 @@ var FIELD_YEAR = '数値'; // 年度
 var FIELD_KOJI = '文字列__1行_'; // 工事名
 var FIELD_MITSUMORI = 'ドロップダウン_5'; // 見積査定
 var FIELD_KEIYAKU = 'ドロップダウン_4'; // 契約状況
+var FIELD_SHINCHOKU = 'ドロップダウン_1'; // 工事進捗（app43の工事名色分け・完成非表示判定と同じフィールド）
 var FIELD_TPM = 'ドロップダウン'; // TPM担当（旧検索ボックスの「主担当」と同一フィールド）
 var FIELD_KYORYOKU = '文字列__複数行_'; // 協力会社
 var FIELD_KEIEIKAIGI = '日付_3'; // 経営会議
@@ -32,7 +33,8 @@ var FIELD_CHAKUUCHI = 'ドロップダウン_3'; // 着打ち(顧客)
 
 var DROPDOWN_FIELDS = [
 { field: FIELD_MITSUMORI, label: '見積査定' },
-{ field: FIELD_KEIYAKU, label: '契約状況' }
+{ field: FIELD_KEIYAKU, label: '契約状況' },
+{ field: FIELD_SHINCHOKU, label: '工事進捗' }
 ];
 
 // 既存値をAPIから収集してチェックボックス化するフィールド（自由入力・日付とも in演算子・複数選択可）
@@ -46,6 +48,12 @@ var DISTINCT_FIELDS = [
 ];
 
 var MULTI_FIELDS = DROPDOWN_FIELDS.concat(DISTINCT_FIELDS);
+
+// kintoneのクエリでは`in`演算子はチェックボックス・ドロップダウン等の選択肢系
+// フィールド専用で、DATE型フィールドには使えない（「フィールドタイプには演算子in
+// を使用できません」エラーになる）。日付フィールドを複数選択した場合は
+// `(日付 = "a" or 日付 = "b")`のようにOR連結した完全一致に変換する。
+var DATE_FIELD_CODES = [FIELD_KEIEIKAIGI, FIELD_CHAKKO, FIELD_KANKO, FIELD_SEIKYU];
 
 // テキスト検索（like演算子・単一値）フィールド
 var TEXT_FIELDS = [
@@ -265,7 +273,11 @@ var parts = [];
 if (f[FIELD_YEAR]) parts.push(FIELD_YEAR + ' = "' + escapeQueryValue(f[FIELD_YEAR]) + '"');
 MULTI_FIELDS.forEach(function(cfg) {
 var vals = f[cfg.field];
-if (vals && vals.length) {
+if (!vals || !vals.length) return;
+if (DATE_FIELD_CODES.indexOf(cfg.field) !== -1) {
+var ors = vals.map(function(v) { return cfg.field + ' = "' + escapeQueryValue(v) + '"'; }).join(' or ');
+parts.push(vals.length > 1 ? '(' + ors + ')' : ors);
+} else {
 parts.push(cfg.field + ' in (' + vals.map(function(v) { return '"' + escapeQueryValue(v) + '"'; }).join(', ') + ')');
 }
 });
@@ -422,6 +434,7 @@ bar.appendChild(buildTextFilter(TEXT_FIELDS[0], current[FIELD_KOJI]));
 bar.appendChild(buildCheckboxDropdown(FIELD_MITSUMORI, '見積査定', dropdownOptions[FIELD_MITSUMORI] || [], current[FIELD_MITSUMORI]));
 bar.appendChild(buildCheckboxDropdown(FIELD_KEIEIKAIGI, '経営会議', distinctOptions[FIELD_KEIEIKAIGI] || [], current[FIELD_KEIEIKAIGI]));
 bar.appendChild(buildCheckboxDropdown(FIELD_KEIYAKU, '契約状況', dropdownOptions[FIELD_KEIYAKU] || [], current[FIELD_KEIYAKU]));
+bar.appendChild(buildCheckboxDropdown(FIELD_SHINCHOKU, '工事進捗', dropdownOptions[FIELD_SHINCHOKU] || [], current[FIELD_SHINCHOKU]));
 bar.appendChild(buildCheckboxDropdown(FIELD_TPM, 'TPM担当', distinctOptions[FIELD_TPM] || [], current[FIELD_TPM]));
 bar.appendChild(buildTextFilter(TEXT_FIELDS[1], current[FIELD_KYORYOKU]));
 

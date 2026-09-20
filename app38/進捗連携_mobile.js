@@ -20,7 +20,7 @@ return m >= 4 ? y : y - 1;
 
 function syncProgress(event) {
 var record = event.record;
-var koujiName = record['ルックアップ'] ? record['ルックアップ'].value : '';
+var koujiName = record['工事名テキスト'] ? record['工事名テキスト'].value : '';
 var progress = record['ラジオボタン_12'] ? record['ラジオボタン_12'].value : '';
 if (!koujiName || !progress) return event;
 var targetName = normalize(koujiName);

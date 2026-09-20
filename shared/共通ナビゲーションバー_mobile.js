@@ -1,14 +1,22 @@
 (function() {
 'use strict';
 
+// app37は「view」パラメータが無い状態で開くと、一覧ビュー自動切替_mobile.js が
+// 特定ビューへ自動的にlocation.hrefでリダイレクトする（実質ページを2回読み込む＝
+// 画面が2回切り替わるように見える）。ナビゲーションバーのリンクにあらかじめ
+// そのviewパラメータを付けておけば、そのリダイレクトが発生しなくなる。
+var APP37_MOBILE_VIEW_ID = '5523202';
+
 var APPS = [
-{ id: 37, label: '工事一覧' },
+{ id: 37, label: '工事一覧', href: function() {
+return '/k/m/37/?view=' + APP37_MOBILE_VIEW_ID;
+} },
 { id: 38, label: 'TPM報告書' },
 { id: 40, label: '他報告書' },
-{ id: 43, label: '工程表' },
+{ id: 43, label: '工程管理' },
 { id: 45, label: '空調運転記録' },
-{ id: 54, label: 'タスク管理' },
-{ id: 55, label: '不在・休暇管理' },
+{ id: 54, label: '計画・タスク管理' },
+{ id: 55, label: '不在・休暇' },
 { id: 34, label: '連絡先' }
 ];
 
@@ -76,7 +84,7 @@ APPS.forEach(function(a) {
 var isCurrent = a.id === currentAppId;
 var item = document.createElement(isCurrent ? 'div' : 'a');
 item.className = 'smc-nav-m-item' + (isCurrent ? ' current' : '');
-if (!isCurrent) item.href = '/k/m/' + a.id + '/';
+if (!isCurrent) item.href = a.href ? a.href() : '/k/m/' + a.id + '/';
 var dot = document.createElement('span');
 dot.className = 'dot';
 var label = document.createElement('span');

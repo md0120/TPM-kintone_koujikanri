@@ -209,7 +209,7 @@ rowhead.textContent = koji;
 var meta = kojiMeta[koji];
 var color = (meta && meta.chakkoMtg === '未') ? '#c0392b' : '#000';
 var bg = (meta && meta.progress === '完成') ? '#ccc' : '#fff';
-rowhead.style.cssText = 'position:sticky;left:0;z-index:1;background:' + bg + ';color:' + color + ';border:1px solid #999;padding:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;';
+rowhead.style.cssText = 'position:sticky;left:0;z-index:3;background:' + bg + ';color:' + color + ';border:1px solid #999;padding:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;';
 tr.appendChild(rowhead);
 
 days.forEach(function(d) {
@@ -230,7 +230,7 @@ var div = document.createElement('div');
 div.textContent = bar.naiyo || '';
 var left = bar.startIdx * M_COL_WIDTH;
 var width = (bar.endIdx - bar.startIdx + 1) * M_COL_WIDTH - 1;
-var style = 'position:absolute;left:' + left + 'px;top:1px;width:' + width + 'px;height:' + M_BAR_HEIGHT + 'px;line-height:' + M_BAR_HEIGHT + 'px;font-size:9px;padding:0 2px;overflow:hidden;white-space:nowrap;box-sizing:border-box;color:#fff;border-radius:2px;';
+var style = 'position:absolute;z-index:2;left:' + left + 'px;top:1px;width:' + width + 'px;height:' + M_BAR_HEIGHT + 'px;line-height:' + M_BAR_HEIGHT + 'px;font-size:9px;padding:0 2px;overflow:hidden;white-space:nowrap;box-sizing:border-box;color:#fff;border-radius:2px;';
 if (bar.kubun === '工事予定') {
 style += 'background:#dcdcdc;border:1.5px dashed #000;color:#333;';
 } else {
