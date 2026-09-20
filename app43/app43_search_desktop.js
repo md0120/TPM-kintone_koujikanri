@@ -578,6 +578,7 @@ style.textContent =
 'text-align: left; padding: 2px 6px; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;' +
 '}' +
 'table#smc-gantt-table thead th { position: sticky; top: 0; z-index: 4; background: #f2f2f2; font-size: 10px; text-align: center; }' +
+'table#smc-gantt-table th.smc-month-th { overflow: hidden; white-space: nowrap; text-overflow: clip; }' +
 // 月（年月）行と日付・曜日行の2段見出しはどちらもposition:stickyでtop:0のままだと
 // 縦スクロール時に同じ位置へ重なり合い、後段（日付・曜日）が前段（年月）を覆い隠して
 // 見えなくなる。月行の高さを明示的に固定した上で、日付・曜日行はその高さぶんだけ
@@ -1041,7 +1042,12 @@ var y = days[i].getFullYear();
 var span = 0;
 while (i + span < days.length && days[i + span].getMonth() === m) span++;
 var th = document.createElement('th');
-th.textContent = y + '-' + pad2(m + 1);
+// 表示範囲の先頭・末尾が月initial/月末にかかると、その月の表示日数が1〜2日しか
+// 無いことがある。この場合「2026-08」のような長いラベルがセル幅からはみ出し、
+// 隣の月の日付列に重なって「線と日付枠がズレて見える」原因になる。表示できる
+// 日数が少ない時は短い表記（例：8月）に切り替え、はみ出しも保険としてCSSで防ぐ。
+th.textContent = span >= 3 ? (y + '-' + pad2(m + 1)) : ((m + 1) + '月');
+th.className = 'smc-month-th';
 th.colSpan = span;
 monthRow.appendChild(th);
 i += span;
