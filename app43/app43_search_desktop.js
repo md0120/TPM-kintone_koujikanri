@@ -14,12 +14,14 @@ var FIELD_NAIYO = '工程名';
 var FIELD_KUBUN = '昼夜区分';
 var FIELD_TPM = '主担当';
 var FIELD_YEAR = '年度';
+var FIELD_HACCHUSHA = '発注者';
 
 // 進捗はapp43自体には存在せず、app37（案件台帳）の進捗ドロップダウンを参照する。
 var APP_KOJI_ID = 37;
 var FIELD_KOJI_SRC = '文字列__1行_';
 var FIELD_PROGRESS_SRC = 'ドロップダウン_1';
 var FIELD_TPM_SRC = 'ドロップダウン';
+var FIELD_HACCHUSHA_SRC = 'ドロップダウン_0'; // app37「発注者」
 var FIELD_SRC_ID = '文字列__1行_'; // app43側「app37レコード番号」フィールド
 var FIELD_CHAKKO_MTG_SRC = 'ドロップダウン_3'; // app37「着工打合せ（顧客）」
 var FIELD_YEAR_SRC = '数値'; // app37「年度」
@@ -148,17 +150,21 @@ var params = new URLSearchParams(location.search);
 var year = params.get('smc_year') || '';
 var tpmRaw = params.get('smc_tpm') || '';
 var tpm = tpmRaw ? tpmRaw.split(',') : []; // 主担当：チェックボックス複数選択のため配列
+var hacchushaRaw = params.get('smc_hacchusha') || '';
+var hacchusha = hacchushaRaw ? hacchushaRaw.split(',') : []; // 発注者：チェックボックス複数選択のため配列
 var koji = params.get('smc_koji') || '';
 var progress = params.get('smc_progress') || '';
 var offset = parseInt(params.get('smc_offset') || '0', 10) || 0;
-return { year: year, tpm: tpm, koji: koji, progress: progress, offset: offset };
+return { year: year, tpm: tpm, hacchusha: hacchusha, koji: koji, progress: progress, offset: offset };
 }
 
-function buildUrl(year, tpm, koji, progress, offset) {
+function buildUrl(year, tpm, koji, progress, offset, hacchusha) {
 var url = new URL(location.href);
 var tpmArr = Array.isArray(tpm) ? tpm : (tpm ? [tpm] : []);
+var hacchushaArr = Array.isArray(hacchusha) ? hacchusha : (hacchusha ? [hacchusha] : []);
 if (year) url.searchParams.set('smc_year', year); else url.searchParams.delete('smc_year');
 if (tpmArr.length) url.searchParams.set('smc_tpm', tpmArr.join(',')); else url.searchParams.delete('smc_tpm');
+if (hacchushaArr.length) url.searchParams.set('smc_hacchusha', hacchushaArr.join(',')); else url.searchParams.delete('smc_hacchusha');
 if (koji) url.searchParams.set('smc_koji', koji); else url.searchParams.delete('smc_koji');
 if (progress) url.searchParams.set('smc_progress', progress); else url.searchParams.delete('smc_progress');
 if (offset) url.searchParams.set('smc_offset', offset); else url.searchParams.delete('smc_offset');
@@ -184,13 +190,18 @@ cb(vals);
 });
 }
 
-function fetchRecords(year, tpm, koji, cb) {
+function fetchRecords(year, tpm, koji, cb, hacchusha) {
 var conds = [];
 if (year) conds.push(FIELD_YEAR + ' = "' + esc(year) + '"');
 var tpmArr = Array.isArray(tpm) ? tpm : (tpm ? [tpm] : []);
 if (tpmArr.length) {
 var tpmOrs = tpmArr.map(function(t) { return FIELD_TPM + ' = "' + esc(t) + '"'; }).join(' or ');
 conds.push(tpmArr.length > 1 ? '(' + tpmOrs + ')' : tpmOrs);
+}
+var hacchushaArr = Array.isArray(hacchusha) ? hacchusha : (hacchusha ? [hacchusha] : []);
+if (hacchushaArr.length) {
+var hacchushaOrs = hacchushaArr.map(function(h) { return FIELD_HACCHUSHA + ' = "' + esc(h) + '"'; }).join(' or ');
+conds.push(hacchushaArr.length > 1 ? '(' + hacchushaOrs + ')' : hacchushaOrs);
 }
 if (koji) conds.push(FIELD_KOJI + ' like "*' + esc(koji) + '*"');
 var query = conds.join(' and ') + (conds.length ? ' ' : '') + 'limit 500';
@@ -356,30 +367,32 @@ function syncFromApp37(onDone) {
 kintone.api(kintone.api.url('/k/v1/records.json', true), 'GET', {
 app: APP_KOJI_ID,
 query: 'limit 500',
-fields: ['レコード番号', FIELD_KOJI_SRC, FIELD_TPM_SRC]
+fields: ['レコード番号', FIELD_KOJI_SRC, FIELD_TPM_SRC, FIELD_HACCHUSHA_SRC]
 }).then(function(resp37) {
 var byId37 = {};
 resp37.records.forEach(function(r) {
 byId37[r['レコード番号'].value] = {
 koji: r[FIELD_KOJI_SRC].value,
-tpm: r[FIELD_TPM_SRC].value
+tpm: r[FIELD_TPM_SRC].value,
+hacchusha: r[FIELD_HACCHUSHA_SRC].value
 };
 });
 return kintone.api(kintone.api.url('/k/v1/records.json', true), 'GET', {
 app: kintone.app.getId(),
 query: 'limit 500',
-fields: ['$id', FIELD_SRC_ID, FIELD_KOJI, FIELD_TPM]
+fields: ['$id', FIELD_SRC_ID, FIELD_KOJI, FIELD_TPM, FIELD_HACCHUSHA]
 }).then(function(resp43) {
 var updates = [];
 resp43.records.forEach(function(r) {
 var src = byId37[r[FIELD_SRC_ID].value];
 if (!src) return;
-if (r[FIELD_KOJI].value !== src.koji || r[FIELD_TPM].value !== src.tpm) {
+if (r[FIELD_KOJI].value !== src.koji || r[FIELD_TPM].value !== src.tpm || r[FIELD_HACCHUSHA].value !== src.hacchusha) {
 updates.push({
 id: r.$id.value,
 record: {
 '工事名': { value: src.koji },
-'主担当': { value: src.tpm }
+'主担当': { value: src.tpm },
+'発注者': { value: src.hacchusha }
 }
 });
 }
@@ -427,7 +440,7 @@ function createMissingDummyRecords(onDone) {
 kintone.api(kintone.api.url('/k/v1/records.json', true), 'GET', {
 app: APP_KOJI_ID,
 query: 'limit 500',
-fields: ['レコード番号', FIELD_KOJI_SRC, FIELD_TPM_SRC, FIELD_YEAR_SRC]
+fields: ['レコード番号', FIELD_KOJI_SRC, FIELD_TPM_SRC, FIELD_YEAR_SRC, FIELD_HACCHUSHA_SRC]
 }).then(function(resp37) {
 return kintone.api(kintone.api.url('/k/v1/records.json', true), 'GET', {
 app: kintone.app.getId(),
@@ -446,11 +459,13 @@ var koji = r[FIELD_KOJI_SRC].value;
 if (!koji) return;
 var year = r[FIELD_YEAR_SRC].value;
 var tpm = r[FIELD_TPM_SRC].value;
+var hacchusha = r[FIELD_HACCHUSHA_SRC].value;
 var range = dummyScheduleRange(year);
 var rec = {
 '工事名': { value: koji },
 '年度': { value: year },
 '主担当': { value: tpm },
+'発注者': { value: hacchusha },
 '昼夜区分': { value: '工事予定' },
 '工程名': { value: 'ダミー' }
 };
@@ -631,13 +646,14 @@ if (p !== except) p.style.display = 'none';
 });
 }
 
-// 主担当のExcelライクなチェックボックス複数選択ドロップダウンを構築する。
+// Excelライクなチェックボックス複数選択ドロップダウンを構築する（主担当・発注者共通）。
 // applyBtnを押した時点でonApply(選択中の値の配列)を呼ぶ。
-function buildTpmCheckboxDropdown(container, choices, currentValues, onApply) {
+function buildTpmCheckboxDropdown(container, fieldKey, label, choices, currentValues, onApply) {
 container.innerHTML = '';
 // パネルはdocument.body直下に置く（containerの外）ため、containerをクリアしただけでは
-// 前回分のパネルが残ってしまう。再構築のたびに必ず古いパネルを片付けておく。
-document.querySelectorAll('.smc43-cb-panel').forEach(function(p) { p.remove(); });
+// 前回分のパネルが残ってしまう。再構築のたびに必ず「このフィールド分の」古いパネルだけを
+// 片付ける（他フィールドのパネルまで巻き込んで消さないようdata-fieldで区別する）。
+document.querySelectorAll('.smc43-cb-panel[data-field="' + fieldKey + '"]').forEach(function(p) { p.remove(); });
 var wrap = document.createElement('div');
 wrap.className = 'smc43-cb-wrap';
 
@@ -645,13 +661,14 @@ var btn = document.createElement('button');
 btn.type = 'button';
 btn.className = 'smc43-cb-btn';
 function updateBtnLabel() {
-btn.textContent = currentValues.length ? '主担当（' + currentValues.length + '）' : '主担当';
+btn.textContent = currentValues.length ? label + '（' + currentValues.length + '）' : label;
 btn.classList.toggle('smc43-cb-active', currentValues.length > 0);
 }
 updateBtnLabel();
 
 var panel = document.createElement('div');
 panel.className = 'smc43-cb-panel';
+panel.setAttribute('data-field', fieldKey);
 panel.style.display = 'none';
 
 choices.forEach(function(c) {
@@ -734,6 +751,14 @@ wrap.appendChild(tpmLabel);
 // 届き次第buildTpmCheckboxDropdown()で中身を差し込む。
 var tpmWrap = document.createElement('span');
 wrap.appendChild(tpmWrap);
+
+var hacchushaLabel = document.createElement('span');
+hacchushaLabel.textContent = '発注者';
+hacchushaLabel.style.marginLeft = '8px';
+wrap.appendChild(hacchushaLabel);
+
+var hacchushaWrap = document.createElement('span');
+wrap.appendChild(hacchushaWrap);
 
 var progressLabel = document.createElement('span');
 progressLabel.textContent = '表示';
@@ -832,7 +857,7 @@ printBtn.disabled = false;
 printBtn.textContent = '印刷';
 openPrintRangeModal(range, records, kojiMeta);
 });
-});
+}, state.hacchusha);
 });
 });
 wrap.appendChild(printBtn);
@@ -888,20 +913,28 @@ if (String(y) === String(defaultYear)) opt.selected = true;
 yearSelect.appendChild(opt);
 });
 if (state.year !== defaultYear) {
-location.href = buildUrl(defaultYear, state.tpm, state.koji, state.progress, state.offset);
+location.href = buildUrl(defaultYear, state.tpm, state.koji, state.progress, state.offset, state.hacchusha);
 }
 });
 
 fetchDistinct(kintone.app.getId(), FIELD_TPM, function(tpms) {
 tpms.sort();
-buildTpmCheckboxDropdown(tpmWrap, tpms, state.tpm, function(vals) {
-applyFilterChange(vals);
+buildTpmCheckboxDropdown(tpmWrap, 'tpm', '主担当', tpms, state.tpm, function(vals) {
+applyFilterChange(vals, undefined);
 });
 });
 
-function applyFilterChange(tpmOverride) {
+fetchDistinct(kintone.app.getId(), FIELD_HACCHUSHA, function(list) {
+list.sort();
+buildTpmCheckboxDropdown(hacchushaWrap, 'hacchusha', '発注者', list, state.hacchusha, function(vals) {
+applyFilterChange(undefined, vals);
+});
+});
+
+function applyFilterChange(tpmOverride, hacchushaOverride) {
 var tpmVal = tpmOverride !== undefined ? tpmOverride : state.tpm;
-location.href = buildUrl(yearSelect.value, tpmVal, kojiInput.value.trim(), progressSelect.value, state.offset);
+var hacchushaVal = hacchushaOverride !== undefined ? hacchushaOverride : state.hacchusha;
+location.href = buildUrl(yearSelect.value, tpmVal, kojiInput.value.trim(), progressSelect.value, state.offset, hacchushaVal);
 }
 yearSelect.addEventListener('change', function() { applyFilterChange(); });
 progressSelect.addEventListener('change', function() { applyFilterChange(); });
@@ -909,16 +942,16 @@ kojiInput.addEventListener('keydown', function(e) {
 if (e.key === 'Enter') applyFilterChange();
 });
 clearBtn.addEventListener('click', function() {
-location.href = buildUrl('', '', '', '', state.offset);
+location.href = buildUrl('', '', '', '', state.offset, '');
 });
 prevBtn.addEventListener('click', function() {
-location.href = buildUrl(state.year, state.tpm, state.koji, state.progress, state.offset - 1);
+location.href = buildUrl(state.year, state.tpm, state.koji, state.progress, state.offset - 1, state.hacchusha);
 });
 nextBtn.addEventListener('click', function() {
-location.href = buildUrl(state.year, state.tpm, state.koji, state.progress, state.offset + 1);
+location.href = buildUrl(state.year, state.tpm, state.koji, state.progress, state.offset + 1, state.hacchusha);
 });
 todayBtn.addEventListener('click', function() {
-location.href = buildUrl(state.year, state.tpm, state.koji, state.progress, 0);
+location.href = buildUrl(state.year, state.tpm, state.koji, state.progress, 0, state.hacchusha);
 });
 }
 
@@ -1618,7 +1651,7 @@ table.appendChild(buildBodyRows(range, records, kojiMeta));
 scrollWrap.appendChild(table);
 if (onComplete) onComplete();
 });
-});
+}, state.hacchusha);
 });
 }
 
